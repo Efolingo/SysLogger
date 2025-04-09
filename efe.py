@@ -105,6 +105,35 @@ def rotate_logs(log_file):
     else:
         return open(log_file, "a", encoding="utf-8")
 
+def get_disk_io_stats():
+    """Returns disk I/O stats (read/write)."""
+    io = psutil.disk_io_counters()
+    return {
+        "Disk Read": f"{round(io.read_bytes / (1024 ** 2), 2)} MB",
+        "Disk Write": f"{round(io.write_bytes / (1024 ** 2), 2)} MB"
+    }
+
+
+
+
+def get_disk_partitions():
+    """Returns disk partition usage details."""
+    partitions = psutil.disk_partitions()
+    disk_info = {}
+    for partition in partitions:
+        usage = psutil.disk_usage(partition.mountpoint)
+        disk_info[partition.device] = {
+            "Mount Point": partition.mountpoint,
+            "File System Type": partition.fstype,
+            "Disk Usage": f"{usage.percent}% used",
+            "Total Size": f"{round(usage.total / (1024 ** 3), 2)} GB",
+            "Used": f"{round(usage.used / (1024 ** 3), 2)} GB",
+            "Free": f"{round(usage.free / (1024 ** 3), 2)} GB"
+        }
+    return disk_info
+
+
+
 def write_log_to_desktop():
     """Writes the system information to a log file on the desktop."""
     try:
