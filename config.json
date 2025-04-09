@@ -1,0 +1,6 @@
+{
+    "cpu_threshold": 90,
+    "ram_threshold": 85,
+    "disk_threshold": 90
+  }
+  
