@@ -5,18 +5,21 @@ import psutil
 import GPUtil
 import smtplib
 import time
+import requests
 import matplotlib.pyplot as plt
+import tkinter as tk
+from tkinter import ttk
 from email.mime.image import MIMEImage
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 
-# Email configuration - BUNLARI KENDİ BİLGİLERİNİZLE DOLDURUN
+# Email configuration
 EMAIL_CONFIG = {
     "sender": "your_email@gmail.com",
     "receiver": "recipient_email@gmail.com",
-    "password": "your_app_password",  # Gmail için 'Uygulama Şifresi' oluşturun
+    "password": "your_app_password", 
     "smtp_server": "smtp.gmail.com",
     "smtp_port": 587
 }
@@ -74,7 +77,8 @@ def get_system_info():
         "GPU Bilgisi": get_gpu_info(),
         "Cpu Ve ram geçmişi": save_usage_graph(),
         "İnternet Bağlantısı": "Var" if check_internet() else "Yok",
-        "Email gönderimi":send_email()
+        "Email gönderimi":send_email(),
+        "Public İp":get_public_ip()
 
     }
     return info
@@ -101,6 +105,12 @@ def check_internet():
         return True
     except OSError:
         return False
+    
+def get_public_ip():
+    try:
+        return requests.get("https://api.ipify.org").text
+    except:
+        return "Erişilemedi"
 
 
 def get_gpu_info():
@@ -139,7 +149,60 @@ def get_disk_partitions():
             disk_info[partition.device] = f"Hata: {str(e)}"
     return disk_info
 
+def launch_gui():
+    def update_stats():
+        try:
+            info = get_system_info()
 
+            cpu_label.config(text=f"CPU Yükü: {info['CPU Yük']}%")
+            ram_label.config(text=f"RAM: {info['RAM Kapasite']}")
+            disk_label.config(text=f"Disk: {info['Disk Kullanım']}")
+            internet_label.config(text=f"İnternet: {info['İnternet Bağlantısı']}")
+            battery_label.config(text=f"Batarya: {info['Pil Durumu']}")
+
+            gpu = info["GPU Bilgisi"]
+            if isinstance(gpu, dict):
+                gpu_label.config(text=f"GPU: {gpu['GPU Adı']} ({gpu['GPU Yük']})")
+            else:
+                gpu_label.config(text=str(gpu))
+
+        except Exception as e:
+            cpu_label.config(text=f"Hata: {e}")
+
+        
+        window.after(5000, update_stats)
+
+    window = tk.Tk()
+    window.title("Sistem Durumu Paneli")
+    window.geometry("400x250")
+    window.resizable(False, False)
+
+    style = ttk.Style(window)
+    style.theme_use("clam")
+
+    title = tk.Label(window, text="🖥️ Sistem Durumu", font=("Arial", 16, "bold"))
+    title.pack(pady=10)
+
+    cpu_label = tk.Label(window, text="", font=("Arial", 12))
+    cpu_label.pack()
+
+    ram_label = tk.Label(window, text="", font=("Arial", 12))
+    ram_label.pack()
+
+    disk_label = tk.Label(window, text="", font=("Arial", 12))
+    disk_label.pack()
+
+    internet_label = tk.Label(window, text="", font=("Arial", 12))
+    internet_label.pack()
+
+    battery_label = tk.Label(window, text="", font=("Arial", 12))
+    battery_label.pack()
+
+    gpu_label = tk.Label(window, text="", font=("Arial", 12))
+    gpu_label.pack()
+
+    update_stats()
+    window.mainloop()
 
 
 def send_email_with_graph(subject, body, image_path=None):
@@ -243,19 +306,28 @@ def check_critical_conditions(system_info):
 
 def main():
     """Ana program"""
-    print("Sistem izleme başlatıldı...")
-    while True:
-        try:
-            write_log()
-            print(f"Son kontrol: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-            print("5 dakika bekleniyor... (Çıkmak için Ctrl+C)")
-            time.sleep(300)  # 5 dakika bekle
-        except KeyboardInterrupt:
-            print("\nProgram sonlandırılıyor...")
-            break
-        except Exception as e:
-            print(f"Beklenmeyen hata: {e}")
-            time.sleep(60)  
+    print("Mod seçin:")
+    print("1. Terminal üzerinden sistem izleme (Log ve e-mail)")
+    print("2. Arayüz (tkinter panel)")
+    secim = input("Seçim (1/2): ").strip()
+
+    if secim == "2":
+        launch_gui()
+    else:
+        print("Sistem izleme başlatıldı...")
+        while True:
+            try:
+                write_log()
+                print(f"Son kontrol: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                print("5 dakika bekleniyor... (Çıkmak için Ctrl+C)")
+                time.sleep(300)
+            except KeyboardInterrupt:
+                print("\nProgram sonlandırılıyor...")
+                break
+            except Exception as e:
+                print(f"Beklenmeyen hata: {e}")
+                time.sleep(60)
+ 
 
 if __name__ == "__main__":
     main()
